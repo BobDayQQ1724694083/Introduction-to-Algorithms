@@ -27,7 +27,7 @@ void printCutRodSolution(int p[], int n, bestCutWay result);
 int main()
 {
     int n = 10;
-    int p[pSize] = {1, 5, 8, 9, 10, 17, 17, 20, 24};
+    int p[pSize] = {1, 5, 8, 9, 10, 17, 17, 20, 24, 30};
 
     bestCutWay result = malloc(sizeof(struct solution));
     result->r = malloc(sizeof(int) * n);
