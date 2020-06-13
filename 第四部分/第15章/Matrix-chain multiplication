@@ -1,0 +1,164 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+
+typedef struct matrix *Matrix;
+struct matrix
+{
+    int **element; //一个二维数组
+    int rows;
+    int columns; //矩阵的行和列
+};
+
+Matrix matrixMultiply(Matrix A, Matrix B); //两个矩阵相乘的标准算法
+void printMatrix(Matrix A);                //打印矩阵
+
+/*自底向上表格法*/
+typedef struct bestPartition *bstPartition;
+struct bestPartition
+{
+    int **bestValue;    //保存代价
+    int **bVPartitionP; //记录最优值对应的分割点
+};
+
+bstPartition matrixChainOrder(int P[]);
+void printOptimalParens(bstPartition result, int i, int j);
+int main()
+{
+    int i;
+    int y;
+    int countA = 0;
+    int countB = 1;//countA和countB用于初始化两个矩阵中的元素
+    int rowsA = 3;
+    int columnsA = 3;
+    int rowsB = 3;
+    int columnsB = 3;
+    Matrix A = malloc(sizeof(struct matrix));
+    Matrix B = malloc(sizeof(struct matrix));
+
+    /*初始化矩阵A和矩阵B*/
+    //行数列数加1是为了从索引1开始,而不是0
+    A->rows = rowsA;
+    A->columns = columnsA;
+    A->element = malloc(sizeof(int *) * (A->rows + 1));
+    A->element[0] = NULL;
+    B->rows = rowsB;
+    B->columns = columnsB;
+    B->element = malloc(sizeof(int *) * (B->rows + 1));
+    B->element[0] = NULL;
+    for (i = 1; i < (A->rows) + 1; i++)
+    {
+        A->element[i] = malloc(sizeof(int) * (A->columns + 1));
+        A->element[i][0] = 0;
+        for (y = 1; y < A->columns + 1; y++)
+        {
+            A->element[i][y] = countA;
+            countA++;
+        }
+    }
+
+    for (i = 1; i < (B->rows) + 1; i++)
+    {
+        B->element[i] = malloc(sizeof(int) * (B->columns + 1));
+        B->element[i][0] = 0;
+        for (y = 1; y < B->columns + 1; y++)
+        {
+            B->element[i][y] = countB;
+            countB++;
+        }
+    }
+    printMatrix(A);
+    printMatrix(B);
+    Matrix result = matrixMultiply(A, B);
+    printMatrix(result);
+
+    /*这里开始进行“自底向上表格法”的测试*/
+    int P = [ 2, 3, 4, 5, 6 ]; //这个序列确定矩阵的规模，例如Ai的规模为P(i-1)XP(i)
+}
+
+Matrix matrixMultiply(Matrix A, Matrix B)
+{
+    int i;
+    int j;
+    int k;
+    Matrix C = NULL;
+    if (A->columns != B->rows)
+    {
+        printf("incompatible dimensions");
+        exit(0);
+    }
+    else
+    { //let C be a new A.rowsXB.columns matrix
+        C = malloc(sizeof(struct matrix));
+        C->rows = A->rows;
+        // printf("c->rows = %d\n", C->rows);
+        C->columns = B->columns;
+        C->element = malloc(sizeof(int *) * (C->rows + 1));
+        C->element[0] = NULL;
+        for (i = 1; i < (C->rows) + 1; i++)
+            C->element[i] = malloc(sizeof(int) * (B->columns + 1));
+
+        for (i = 1; i < (C->rows + 1); i++)
+            for (j = 1; j < (C->columns + 1); j++)
+            {
+                C->element[i][j] = 0;
+                for (k = 1; k < (A->columns + 1); k++)
+                    C->element[i][j] += A->element[i][k] * B->element[k][j];
+            }
+    }
+    return C;
+}
+
+void printMatrix(Matrix A)
+{
+    int row;
+    int column;
+    for (row = 1; row < (A->rows + 1); row++)
+        for (column = 1; column < (A->columns + 1); column++)
+            printf("matrix[%d][%d] is %d\n", row, column, A->element[row][column]);
+    printf("done!\n");
+}
+
+bstPartition matrixChainOrder(int P[])
+{
+    int i, l, j, k, q;
+    int Plen = sizeof(P) / sizeof(P[0]);
+    int n = Plen - 1;
+    bstPartition result = malloc(sizeof(struct bestPartition));
+    result->bestValue = malloc(sizeof(int *) * n);
+    result->bVPartitionP = malloc(sizeof(int *) * (n - 1));
+    for (i = 0; i < n; i++)
+    {
+        result->bestValue[i] = malloc(sizeof(int) * n);
+        result->bestValue[i][i] = 0;//长度为1的链最小计算代价
+    }
+    for (l = 2; l < n; l++) // l is the chain length
+        for (i = 1; i < n - l + 1; i++)
+        {
+            j = i + l - 1;
+            result->bestValue[i][j] = INT_MAX;
+            for(k = i; k < j - 1; k++)
+            {
+                q = result->bestValue[i][k] + result->bestValue[k +1][j] + P[i - 1] * P[k] * P[j];//A(i)的规模为P(i-1)XP(i)
+                if(q < result->bestValue[i][j])
+                {
+                    result->bestValue[i][j] = q;
+                    result->bVPartitionP[i][j] = k;
+                }
+            }
+        }
+    return result;
+}
+
+void printOptimalParens(bstPartition result, int i, int j)
+{
+    if(i == j)
+        printf("A");
+    else
+    {
+        printf("(");
+        printOptimalParens(result, i, result->bVPartitionP[i][j]);
+        printOptimalParens(result, result->bVPartitionP[i][j], j);
+        printf(")");
+    }
+}
